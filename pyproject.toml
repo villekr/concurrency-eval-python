@@ -5,7 +5,7 @@ description = ""
 authors = ["Ville Kärkkäinen <ville.karkkainen@outlook.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 aioboto3 = "11.2.0"
 aws-xray-sdk = "^2.12.0"
 
