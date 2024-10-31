@@ -1,22 +1,20 @@
 [tool.poetry]
-name = "python-async-lambda"
+name = "concurrency-eval-python"
 version = "0.1.0"
 description = ""
 authors = ["Ville Kärkkäinen <ville.karkkainen@outlook.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-aioboto3 = "11.2.0"
-aws-xray-sdk = "^2.12.0"
+python = "^3.12"
+aioboto3 = "13.2.0"
+aws-xray-sdk = "^2.14.0"
 
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.3.0"
-isort = "^5.12.0"
-flake8 = "^6.0.0"
-pytest = "^7.3.1"
-pytest-asyncio = "^0.21.0"
+black = "^24.10.0"
+isort = "^5.13.2"
+flake8 = "^7.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

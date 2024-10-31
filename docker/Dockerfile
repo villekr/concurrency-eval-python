@@ -1,3 +1,4 @@
-FROM public.ecr.aws/sam/build-python3.11
+FROM public.ecr.aws/sam/build-python3.12
 
-RUN pip install poetry==1.5.1
+RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN $HOME/.local/bin/poetry
