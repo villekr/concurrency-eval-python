@@ -34,7 +34,7 @@ jobs:
 
   package-and-upload:
     name: Package Lambda and upload artifacts to S3
-#    needs: lint
+    needs: lint
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -45,14 +45,6 @@ jobs:
       WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
       AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
       - name: Validate required configuration
         shell: bash
         run: |
@@ -60,24 +52,14 @@ jobs:
           : "${ARTIFACT_BUCKET_NAME?Define ARTIFACT_BUCKET_NAME as a Repository/Environment variable or Secret}"
           : "${WRITER_ROLE_ARN?Define WRITER_ROLE_ARN as a Repository/Environment variable or Secret}"
           : "${AWS_REGION?Define AWS_REGION as a Repository/Environment variable or Secret}"
+          
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Compute artifact metadata (name/version/date/sha)
-        id: meta
-        shell: bash
-        run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import tomllib, pathlib, os, datetime
-          data = tomllib.loads(pathlib.Path('pyproject.toml').read_text())
-          name = data.get('project', {}).get('name', 'app')
-          version = data.get('project', {}).get('version', '0.0.0')
-          sha = os.getenv('GITHUB_SHA','')[:7]
-          date = datetime.datetime.utcnow().strftime('%Y%m%d')
-          print(f"name={name}")
-          print(f"version={version}")
-          print(f"sha={sha}")
-          print(f"date={date}")
-          print(f"base_prefix={name}/{version}/{date}/{sha}")
-          PY
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v4
@@ -117,9 +99,8 @@ jobs:
           BUCKET: ${{ env.ARTIFACT_BUCKET_NAME }}
         run: |
           set -euxo pipefail
-          BASE="${{ steps.meta.outputs.version }}/${{ steps.meta.outputs.date }}/${{ steps.meta.outputs.sha }}"
-          LAYER_KEY="concurrency-eval-python/lambda_layer/${BASE}.zip"
-          FUNC_KEY="concurrency-eval-python/lambda_function/${BASE}.zip"
+          LAYER_KEY="concurrency-eval-python/lambda_layer/lambda_layer.zip"
+          FUNC_KEY="concurrency-eval-python/lambda_function/lambda_function.zip"
           aws s3 cp build/layer.zip "s3://${BUCKET}/${LAYER_KEY}"
           aws s3 cp build/function.zip "s3://${BUCKET}/${FUNC_KEY}"
           echo "layer_s3_uri=s3://${BUCKET}/${LAYER_KEY}" >> "$GITHUB_OUTPUT"
@@ -127,6 +108,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "Artifacts uploaded:" >> $GITHUB_STEP_SUMMARY
-          echo "- Layer: s3://${{ env.ARTIFACT_BUCKET_NAME }}/concurrency-eval-python/lambda_layer/${{ steps.meta.outputs.version }}/${{ steps.meta.outputs.date }}/${{ steps.meta.outputs.sha }}.zip" >> $GITHUB_STEP_SUMMARY
-          echo "- Function: s3://${{ env.ARTIFACT_BUCKET_NAME }}/concurrency-eval-python/lambda_function/${{ steps.meta.outputs.version }}/${{ steps.meta.outputs.date }}/${{ steps.meta.outputs.sha }}.zip" >> $GITHUB_STEP_SUMMARY
+          echo "Artifacts uploaded (latest via S3 object versions):" >> $GITHUB_STEP_SUMMARY
+          echo "- Layer: s3://${{ env.ARTIFACT_BUCKET_NAME }}/concurrency-eval-python/lambda_layer/lambda_layer.zip" >> $GITHUB_STEP_SUMMARY
+          echo "- Function: s3://${{ env.ARTIFACT_BUCKET_NAME }}/concurrency-eval-python/lambda_function/lambda_function.zip" >> $GITHUB_STEP_SUMMARY

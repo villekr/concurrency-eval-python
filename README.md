@@ -32,5 +32,7 @@ Example values (do not hard-code in workflow):
 
 ## Outputs
 When the push workflow completes, it prints S3 URIs for:
-- Lambda layer zip under s3://<artifact-bucket>/concurrency-eval-python/lambda_layer/<version>/<yyyymmdd>/<shortsha>.zip
-- Lambda function zip under s3://<artifact-bucket>/concurrency-eval-python/lambda_function/<version>/<yyyymmdd>/<shortsha>.zip
+- Lambda layer zip under s3://<artifact-bucket>/concurrency-eval-python/lambda_layer/lambda_layer.zip
+- Lambda function zip under s3://<artifact-bucket>/concurrency-eval-python/lambda_function/lambda_function.zip
+
+Note: The bucket should have S3 Versioning enabled. We rely on S3 object versions instead of embedding project version numbers or timestamps in paths.
