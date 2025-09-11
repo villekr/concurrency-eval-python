@@ -1,23 +1,27 @@
-[tool.poetry]
+[project]
 name = "python-async-lambda"
-version = "0.1.0"
-description = ""
+version = "0.2.0"
+description = "Python code for [How Do You Like Your Lambda Concurrency](https://ville-karkkainen.medium.com/how-do-you-like-your-aws-lambda-concurrency-part-1-introduction-7a3f7ecfe4b5)-blog series."
 authors = ["Ville Kärkkäinen <ville.karkkainen@outlook.com>"]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aioboto3>=15.1.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-aioboto3 = "11.2.0"
-aws-xray-sdk = "^2.12.0"
+[tool.ruff]
+line-length = 120
+fix = true
 
-[tool.poetry.dev-dependencies]
+[tool.ruff.lint]
+select = [
+    # isort
+    "I",
+    "F"
+]
 
-[tool.poetry.group.dev.dependencies]
-black = "^23.3.0"
-isort = "^5.12.0"
-flake8 = "^6.0.0"
-pytest = "^7.3.1"
-pytest-asyncio = "^0.21.0"
+[dependency-groups]
+dev = [
+    "ruff>=0.13.0",
+]
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"

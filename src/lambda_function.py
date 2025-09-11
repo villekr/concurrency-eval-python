@@ -18,7 +18,7 @@ def lambda_handler(event, context):
 
 
 async def processor(event):
-    session = get_session()
+    session = get_session()  # This is comment
     async with session.create_client("s3") as s3:
         bucket_name = event["s3_bucket_name"]
         folder = event["folder"]
@@ -36,7 +36,7 @@ async def processor(event):
 
 async def get(s3, bucket_name: str, key: str, find: str) -> str or None:
     response = await s3.get_object(Bucket=bucket_name, Key=key)
-    body = (await response["Body"].read()).decode('utf-8')
+    body = (await response["Body"].read()).decode("utf-8")
     if find is not None:
         return None if body.find(find) == -1 else key
     return None
