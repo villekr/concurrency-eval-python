@@ -9,8 +9,8 @@ on:
     branches: ['**']
 
 jobs:
-  lint:
-    name: Ruff format and lint
+  format-and-lint-check:
+    name: Ruff format and lint check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,16 +34,17 @@ jobs:
 
   package-and-upload:
     name: Package Lambda and upload artifacts to S3
-    needs: lint
+    needs: format-and-lint-check
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      id-token: write   # required for GitHub OIDC
+      id-token: write
       contents: read
     env:
       ARTIFACT_BUCKET_NAME: ${{ vars.ARTIFACT_BUCKET_NAME || secrets.ARTIFACT_BUCKET_NAME }}
       WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
       AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
+      ARTIFACT_PREFIX: concurrency-eval-python
     steps:
       - name: Validate required configuration
         shell: bash
@@ -97,17 +98,20 @@ jobs:
       - name: Upload artifacts to S3
         env:
           BUCKET: ${{ env.ARTIFACT_BUCKET_NAME }}
+          PREFIX: ${{ env.ARTIFACT_PREFIX }}
         run: |
           set -euxo pipefail
-          LAYER_KEY="concurrency-eval-python/lambda_layer/lambda_layer.zip"
-          FUNC_KEY="concurrency-eval-python/lambda_function/lambda_function.zip"
+          LAYER_KEY="${PREFIX}/lambda_layer.zip"
+          FUNC_KEY="${PREFIX}/lambda_function.zip"
           aws s3 cp build/layer.zip "s3://${BUCKET}/${LAYER_KEY}"
           aws s3 cp build/function.zip "s3://${BUCKET}/${FUNC_KEY}"
           echo "layer_s3_uri=s3://${BUCKET}/${LAYER_KEY}" >> "$GITHUB_OUTPUT"
           echo "function_s3_uri=s3://${BUCKET}/${FUNC_KEY}" >> "$GITHUB_OUTPUT"
 
       - name: Summary
+        env:
+          PREFIX: ${{ env.ARTIFACT_PREFIX }}
         run: |
           echo "Artifacts uploaded (latest via S3 object versions):" >> $GITHUB_STEP_SUMMARY
-          echo "- Layer: s3://${{ env.ARTIFACT_BUCKET_NAME }}/concurrency-eval-python/lambda_layer/lambda_layer.zip" >> $GITHUB_STEP_SUMMARY
-          echo "- Function: s3://${{ env.ARTIFACT_BUCKET_NAME }}/concurrency-eval-python/lambda_function/lambda_function.zip" >> $GITHUB_STEP_SUMMARY
+          echo "- Layer: s3://${{ env.ARTIFACT_BUCKET_NAME }}/${PREFIX}/lambda_layer.zip" >> $GITHUB_STEP_SUMMARY
+          echo "- Function: s3://${{ env.ARTIFACT_BUCKET_NAME }}/${PREFIX}/lambda_function.zip" >> $GITHUB_STEP_SUMMARY
