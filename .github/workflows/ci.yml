@@ -123,7 +123,7 @@ jobs:
           PREFIX: ${{ env.ARTIFACT_PREFIX }}
         run: |
           echo "Artifacts uploaded:" >> $GITHUB_STEP_SUMMARY
-          echo "- Layer key: ${{ steps.upload.outputs.layer_s3_key }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Layer version: ${{ steps.upload.outputs.layer_s3_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Function key: ${{ steps.upload.outputs.code_s3_key }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Function version: ${{ steps.upload.outputs.code_s3_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- code_s3_key=\"${{ steps.upload.outputs.code_s3_key }}\"" >> $GITHUB_STEP_SUMMARY
+          echo "- code_s3_version=\"${{ steps.upload.outputs.code_s3_version }}\"" >> $GITHUB_STEP_SUMMARY
+          echo "- layer_s3_key=\"${{ steps.upload.outputs.layer_s3_key }}\"" >> $GITHUB_STEP_SUMMARY
+          echo "- layer_s3_version=\"${{ steps.upload.outputs.layer_s3_version }}\"" >> $GITHUB_STEP_SUMMARY          
