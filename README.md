@@ -31,8 +31,11 @@ Example values (do not hard-code in workflow):
   - s3:PutObjectAcl if your bucket policy requires ACLs (often not needed)
 
 ## Outputs
-When the push workflow completes, it prints S3 URIs for:
-- Lambda layer zip under s3://<artifact-bucket>/concurrency-eval-python/lambda_layer.zip
-- Lambda function zip under s3://<artifact-bucket>/concurrency-eval-python/lambda_function.zip
+The workflow exposes the following outputs from the packaging job (package-and-upload):
+- s3_bucket: Name of the artifact S3 bucket.
+- code_s3_key: S3 object key for the Lambda function zip including the version tag (e.g., concurrency-eval-python/lambda_function.zip?versionId=<id>).
+- layer_s3_key: S3 object key for the Lambda layer zip including the version tag (e.g., concurrency-eval-python/lambda_layer.zip?versionId=<id>).
+
+These outputs can be consumed by subsequent jobs or reusable workflows via job outputs. The job summary will also display the resolved values.
 
 Note: The bucket should have S3 Versioning enabled. We rely on S3 object versions instead of embedding project version numbers or timestamps in paths.
