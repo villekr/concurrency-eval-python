@@ -27,10 +27,10 @@ Example values (do not hard-code in workflow):
 ## AWS prerequisites
 - Configure GitHub OIDC in your AWS account and trust the repository for the role above.
 - The role assumed by the workflow needs permissions to upload to the artifact bucket, e.g. minimal S3 permissions:
-  - s3:PutObject on s3://<artifact-bucket>/lambda-layer/* and s3://<artifact-bucket>/lambda-function/*
+  - s3:PutObject on s3://<artifact-bucket>/concurrency-eval-python/lambda_layer/* and s3://<artifact-bucket>/concurrency-eval-python/lambda_function/*
   - s3:PutObjectAcl if your bucket policy requires ACLs (often not needed)
 
 ## Outputs
-When the push to main workflow completes, it prints S3 URIs for:
-- Lambda layer zip under s3://<artifact-bucket>/lambda-layer/<project>/<version>/<yyyymmdd>/<shortsha>.zip
-- Lambda function zip under s3://<artifact-bucket>/lambda-function/<project>/<version>/<yyyymmdd>/<shortsha>.zip
+When the push workflow completes, it prints S3 URIs for:
+- Lambda layer zip under s3://<artifact-bucket>/concurrency-eval-python/lambda_layer/<version>/<yyyymmdd>/<shortsha>.zip
+- Lambda function zip under s3://<artifact-bucket>/concurrency-eval-python/lambda_function/<version>/<yyyymmdd>/<shortsha>.zip
