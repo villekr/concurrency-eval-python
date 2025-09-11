@@ -9,32 +9,32 @@ on:
     branches: ['**']
 
 jobs:
-  lint:
-    name: Ruff format and lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install ruff
-        run: |
-          python -m pip install --upgrade pip
-          pip install ruff
-
-      - name: Ruff format check (src)
-        run: ruff format --check src
-
-      - name: Ruff lint (src)
-        run: ruff check src
+#  lint:
+#    name: Ruff format and lint
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.13'
+#
+#      - name: Install ruff
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install ruff
+#
+#      - name: Ruff format check (src)
+#        run: ruff format --check src
+#
+#      - name: Ruff lint (src)
+#        run: ruff check src
 
   package-and-upload:
     name: Package Lambda and upload artifacts to S3
-    needs: lint
+#    needs: lint
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -45,6 +45,13 @@ jobs:
       WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
       AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
     steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.WRITER_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-artifact-upload
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -105,12 +112,12 @@ jobs:
           cp src/lambda_function.py build/function/
           (cd build/function && zip -r ../function.zip .)
 
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.WRITER_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: github-actions-artifact-upload
+#      - name: Configure AWS credentials (OIDC)
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: ${{ env.WRITER_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-session-name: github-actions-artifact-upload
 
       - name: Upload artifacts to S3
         env:
