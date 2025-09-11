@@ -36,8 +36,8 @@ jobs:
     name: Package Lambda and upload artifacts to S3
     needs: format-and-lint-check
     if: github.event_name == 'push'
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-latest-arm
+    # runs-on: ubuntu-24.04 # we don't want to rely directly on 'ubuntu-latest'
+    runs-on: ubuntu-24.04-arm
     permissions:
       id-token: write
       contents: read
