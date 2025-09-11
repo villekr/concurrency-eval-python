@@ -113,13 +113,17 @@ jobs:
           # Use s3api to capture VersionId from the response
           LAYER_VERSION_ID=$(aws s3api put-object --bucket "$BUCKET" --key "$LAYER_KEY" --body build/layer.zip --query 'VersionId' --output text)
           FUNC_VERSION_ID=$(aws s3api put-object --bucket "$BUCKET" --key "$FUNC_KEY" --body build/function.zip --query 'VersionId' --output text)
+          echo "code_s3_key=${FUNC_KEY}" >> "$GITHUB_OUTPUT"
+          echo "code_s3_version=${FUNC_VERSION_ID}" >> "$GITHUB_OUTPUT"
+          echo "layer_s3_key=${LAYER_KEY}" >> "$GITHUB_OUTPUT"
+          echo "layer_s3_version=${LAYER_VERSION_ID}" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         env:
           PREFIX: ${{ env.ARTIFACT_PREFIX }}
         run: |
           echo "Artifacts uploaded:" >> $GITHUB_STEP_SUMMARY
-          echo "code_s3_key=${FUNC_KEY}" >> "$GITHUB_OUTPUT"
-          echo "code_s3_version=${FUNC_VERSION_ID}" >> "$GITHUB_OUTPUT"
-          echo "layer_s3_key=${LAYER_KEY}" >> "$GITHUB_OUTPUT"
-          echo "layer_s3_version=${LAYER_VERSION_ID}" >> "$GITHUB_OUTPUT"
+          echo "- Layer key: ${{ steps.upload.outputs.layer_s3_key }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Layer version: ${{ steps.upload.outputs.layer_s3_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Function key: ${{ steps.upload.outputs.code_s3_key }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Function version: ${{ steps.upload.outputs.code_s3_version }}" >> $GITHUB_STEP_SUMMARY
