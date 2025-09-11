@@ -149,6 +149,25 @@ wheels = [
 ]
 
 [[package]]
+name = "concurrency-eval-python"
+version = "0.2.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "aioboto3" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "aioboto3", specifier = ">=15.1.0" }]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.13.0" }]
+
+[[package]]
 name = "frozenlist"
 version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -294,25 +313,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/ff/47f08595e3d9b5e149c150f88d9714574f1a7cbd89fe2817158a952674bf/propcache-0.3.2-cp313-cp313t-win_amd64.whl", hash = "sha256:9704bedf6e7cbe3c65eca4379a9b53ee6a83749f047808cbb5044d40d7d72198", size = 44857, upload-time = "2025-06-09T22:55:39.687Z" },
     { url = "https://files.pythonhosted.org/packages/cc/35/cc0aaecf278bb4575b8555f2b137de5ab821595ddae9da9d3cd1da4072c7/propcache-0.3.2-py3-none-any.whl", hash = "sha256:98f1ec44fb675f5052cccc8e609c46ed23a35a1cfd18545ad4e29002d858a43f", size = 12663, upload-time = "2025-06-09T22:56:04.484Z" },
 ]
-
-[[package]]
-name = "python-async-lambda"
-version = "0.2.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "aioboto3" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "aioboto3", specifier = ">=15.1.0" }]
-
-[package.metadata.requires-dev]
-dev = [{ name = "ruff", specifier = ">=0.13.0" }]
 
 [[package]]
 name = "python-dateutil"
