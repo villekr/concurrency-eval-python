@@ -36,7 +36,8 @@ jobs:
     name: Package Lambda and upload artifacts to S3
     needs: format-and-lint-check
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-arm
     permissions:
       id-token: write
       contents: read
@@ -45,6 +46,7 @@ jobs:
       WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
       AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
       ARTIFACT_PREFIX: concurrency-eval-python
+#      LAMBDA_PLATFORM: linux_aarch64  # For Intel architecture, use: linux_x86_64
     outputs:
       s3_bucket: ${{ steps.upload.outputs.s3_bucket }}
       code_s3_key: ${{ steps.upload.outputs.code_s3_key }}
@@ -81,7 +83,12 @@ jobs:
           # If requirements.txt exists, install deps into layer; otherwise create an empty layer structure
           if [ -f requirements.txt ]; then
             python -m pip install --upgrade pip
-            pip install -r requirements.txt -t build/layer/python
+#            pip install -r requirements.txt -t build/layer/python \
+#              --platform ${{ env.LAMBDA_PLATFORM }} \
+#              --only-binary=:all: \
+#              --no-deps
+#            # Install dependencies again to handle transitive deps that might not be available as ARM64 wheels
+            pip install -r requirements.txt -t build/layer/python --upgrade --no-deps
           else
             echo "No requirements.txt found; building an empty layer (stdlib-only)."
           fi
