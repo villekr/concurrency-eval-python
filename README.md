@@ -33,8 +33,10 @@ Example values (do not hard-code in workflow):
 ## Outputs
 The workflow exposes the following outputs from the packaging job (package-and-upload):
 - s3_bucket: Name of the artifact S3 bucket.
-- code_s3_key: S3 object key for the Lambda function zip including the version tag (e.g., concurrency-eval-python/lambda_function.zip?versionId=<id>).
-- layer_s3_key: S3 object key for the Lambda layer zip including the version tag (e.g., concurrency-eval-python/lambda_layer.zip?versionId=<id>).
+- code_s3_key: S3 object key for the Lambda function zip without version info (e.g., concurrency-eval-python/lambda_function.zip).
+- code_s3_version: Version identifier for the Lambda function S3 object.
+- layer_s3_key: S3 object key for the Lambda layer zip without version info (e.g., concurrency-eval-python/lambda_layer.zip).
+- layer_s3_version: Version identifier for the Lambda layer S3 object.
 
 These outputs can be consumed by subsequent jobs or reusable workflows via job outputs. The job summary will also display the resolved values.
 
