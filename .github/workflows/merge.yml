@@ -8,7 +8,7 @@ jobs:
   package-and-upload:
     name: Package Lambda and upload artifacts to S3
     # runs-on: ubuntu-24.04 # we don't want to rely directly on 'ubuntu-latest'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04-arm # we don't want to rely directly on 'ubuntu-latest'
     permissions:
       id-token: write
       contents: read
@@ -17,9 +17,7 @@ jobs:
       WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
       AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
       ARTIFACT_PREFIX: concurrency-eval-python
-      # LAMBDA_PLATFORM: linux_aarch64  # For Intel architecture, use: linux_x86_64
     outputs:
-      s3_bucket: ${{ steps.upload.outputs.s3_bucket }}
       code_s3_key: ${{ steps.upload.outputs.code_s3_key }}
       code_s3_version: ${{ steps.upload.outputs.code_s3_version }}
       layer_s3_key: ${{ steps.upload.outputs.layer_s3_key }}
