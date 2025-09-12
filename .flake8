@@ -1,3 +1,0 @@
-[flake8]
-# Set max line length to match Black default
-max-line-length = 88

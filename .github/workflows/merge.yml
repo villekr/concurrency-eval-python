@@ -1,0 +1,102 @@
+name: Merge CI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  package-and-upload:
+    name: Package Lambda and upload artifacts to S3
+    # runs-on: ubuntu-24.04 # we don't want to rely directly on 'ubuntu-latest'
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      ARTIFACT_BUCKET_NAME: ${{ vars.ARTIFACT_BUCKET_NAME || secrets.ARTIFACT_BUCKET_NAME }}
+      WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
+      ARTIFACT_PREFIX: concurrency-eval-python
+      # LAMBDA_PLATFORM: linux_aarch64  # For Intel architecture, use: linux_x86_64
+    outputs:
+      s3_bucket: ${{ steps.upload.outputs.s3_bucket }}
+      code_s3_key: ${{ steps.upload.outputs.code_s3_key }}
+      code_s3_version: ${{ steps.upload.outputs.code_s3_version }}
+      layer_s3_key: ${{ steps.upload.outputs.layer_s3_key }}
+      layer_s3_version: ${{ steps.upload.outputs.layer_s3_version }}
+    steps:
+      - name: Validate required configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ARTIFACT_BUCKET_NAME?Define ARTIFACT_BUCKET_NAME as a Repository/Environment variable or Secret}"
+          : "${WRITER_ROLE_ARN?Define WRITER_ROLE_ARN as a Repository/Environment variable or Secret}"
+          : "${AWS_REGION?Define AWS_REGION as a Repository/Environment variable or Secret}"
+      
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Export dependencies to requirements.txt from uv.lock
+        run: uv export --frozen --no-dev -o requirements.txt
+
+      - name: Prepare Lambda layer (Python dependencies)
+        run: |
+          set -euxo pipefail
+          mkdir -p build/layer/python
+          # If requirements.txt exists, install deps into layer; otherwise create an empty layer structure
+          if [ -f requirements.txt ]; then
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt -t build/layer/python --upgrade --no-deps
+          else
+            echo "No requirements.txt found; building an empty layer (stdlib-only)."
+          fi
+          (cd build/layer && zip -r ../layer.zip .)
+
+      - name: Package Lambda function code
+        run: |
+          set -euxo pipefail
+          mkdir -p build/function
+          cp src/lambda_function.py build/function/
+          (cd build/function && zip -r ../function.zip .)
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.WRITER_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-artifact-upload
+
+      - id: upload
+        name: Upload artifacts to S3 (capture versioned keys)
+        env:
+          BUCKET: ${{ env.ARTIFACT_BUCKET_NAME }}
+          PREFIX: ${{ env.ARTIFACT_PREFIX }}
+        run: |
+          set -euxo pipefail
+          LAYER_KEY="${PREFIX}/lambda_layer.zip"
+          FUNC_KEY="${PREFIX}/lambda_function.zip"
+          # Use s3api to capture VersionId from the response
+          LAYER_VERSION_ID=$(aws s3api put-object --bucket "$BUCKET" --key "$LAYER_KEY" --body build/layer.zip --query 'VersionId' --output text)
+          FUNC_VERSION_ID=$(aws s3api put-object --bucket "$BUCKET" --key "$FUNC_KEY" --body build/function.zip --query 'VersionId' --output text)
+          echo "code_s3_key=${FUNC_KEY}" >> "$GITHUB_OUTPUT"
+          echo "code_s3_version=${FUNC_VERSION_ID}" >> "$GITHUB_OUTPUT"
+          echo "layer_s3_key=${LAYER_KEY}" >> "$GITHUB_OUTPUT"
+          echo "layer_s3_version=${LAYER_VERSION_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        env:
+          PREFIX: ${{ env.ARTIFACT_PREFIX }}
+        run: |
+          echo "Artifacts uploaded:" >> $GITHUB_STEP_SUMMARY
+          echo "- code_s3_key=\"${{ steps.upload.outputs.code_s3_key }}\"" >> $GITHUB_STEP_SUMMARY
+          echo "- code_s3_version=\"${{ steps.upload.outputs.code_s3_version }}\"" >> $GITHUB_STEP_SUMMARY
+          echo "- layer_s3_key=\"${{ steps.upload.outputs.layer_s3_key }}\"" >> $GITHUB_STEP_SUMMARY
+          echo "- layer_s3_version=\"${{ steps.upload.outputs.layer_s3_version }}\"" >> $GITHUB_STEP_SUMMARY
