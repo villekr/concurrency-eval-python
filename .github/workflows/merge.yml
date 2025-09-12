@@ -58,12 +58,12 @@ jobs:
           fi
           (cd build/layer && zip -r ../layer.zip .)
 
-      - name: Package Lambda function code
+      - name: Create source zip
         run: |
           set -euxo pipefail
-          mkdir -p build/function
-          cp src/lambda_function.py build/function/
-          (cd build/function && zip -r ../function.zip .)
+          mkdir -p build/source
+          cp -r src/. build/source/
+          (cd build/source && zip -r ../source.zip .)
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -83,7 +83,7 @@ jobs:
           FUNC_KEY="${PREFIX}/lambda_function.zip"
           # Use s3api to capture VersionId from the response
           LAYER_VERSION_ID=$(aws s3api put-object --bucket "$BUCKET" --key "$LAYER_KEY" --body build/layer.zip --query 'VersionId' --output text)
-          FUNC_VERSION_ID=$(aws s3api put-object --bucket "$BUCKET" --key "$FUNC_KEY" --body build/function.zip --query 'VersionId' --output text)
+          FUNC_VERSION_ID=$(aws s3api put-object --bucket "$BUCKET" --key "$FUNC_KEY" --body build/source.zip --query 'VersionId' --output text)
           echo "code_s3_key=${FUNC_KEY}" >> "$GITHUB_OUTPUT"
           echo "code_s3_version=${FUNC_VERSION_ID}" >> "$GITHUB_OUTPUT"
           echo "layer_s3_key=${LAYER_KEY}" >> "$GITHUB_OUTPUT"
