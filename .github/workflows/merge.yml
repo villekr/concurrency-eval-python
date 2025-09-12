@@ -1,41 +1,12 @@
-name: CI
+name: Merge CI
 
 on:
-  pull_request:
-    # Temporarily run on any PR changes to test CI
-    types: [opened, synchronize, reopened, ready_for_review]
   push:
-    # Temporarily run on pushes to any branch to test CI
-    branches: ['**']
+    branches: [ main ]
 
 jobs:
-  format-and-lint-check:
-    name: Ruff format and lint check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install ruff
-        run: |
-          python -m pip install --upgrade pip
-          pip install ruff
-
-      - name: Ruff format check (src)
-        run: ruff format --check src
-
-      - name: Ruff lint (src)
-        run: ruff check src
-
   package-and-upload:
     name: Package Lambda and upload artifacts to S3
-    needs: format-and-lint-check
-    if: github.event_name == 'push'
     # runs-on: ubuntu-24.04 # we don't want to rely directly on 'ubuntu-latest'
     runs-on: ubuntu-24.04-arm
     permissions:
@@ -61,7 +32,7 @@ jobs:
           : "${ARTIFACT_BUCKET_NAME?Define ARTIFACT_BUCKET_NAME as a Repository/Environment variable or Secret}"
           : "${WRITER_ROLE_ARN?Define WRITER_ROLE_ARN as a Repository/Environment variable or Secret}"
           : "${AWS_REGION?Define AWS_REGION as a Repository/Environment variable or Secret}"
-          
+      
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -128,4 +99,4 @@ jobs:
           echo "- code_s3_key=\"${{ steps.upload.outputs.code_s3_key }}\"" >> $GITHUB_STEP_SUMMARY
           echo "- code_s3_version=\"${{ steps.upload.outputs.code_s3_version }}\"" >> $GITHUB_STEP_SUMMARY
           echo "- layer_s3_key=\"${{ steps.upload.outputs.layer_s3_key }}\"" >> $GITHUB_STEP_SUMMARY
-          echo "- layer_s3_version=\"${{ steps.upload.outputs.layer_s3_version }}\"" >> $GITHUB_STEP_SUMMARY          
+          echo "- layer_s3_version=\"${{ steps.upload.outputs.layer_s3_version }}\"" >> $GITHUB_STEP_SUMMARY
