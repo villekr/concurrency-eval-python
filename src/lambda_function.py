@@ -11,7 +11,7 @@ def lambda_handler(event, context):
 
     return {
         "lang": "python",
-        "detail": "aioboto3",
+        "detail": "aiobotocore",
         "result": result,
         "time": elapsed,
     }
@@ -24,19 +24,19 @@ async def processor(event):
         folder = event["folder"]
         find = event["find"]
         response = await s3.list_objects_v2(Bucket=bucket_name, Prefix=folder)
-        keys = [obj["Key"] for obj in response["Contents"]]
+        keys = [obj["Key"] for obj in response.get("Contents", [])]
         tasks = [get(s3, bucket_name, key, find) for key in keys]
         responses = await asyncio.gather(*tasks)
-        if find is not None:
-            first_non_none = next(value for value in responses if value is not None)
+        if find:
+            first_non_none = next((value for value in responses if value is not None), None)
             return first_non_none
         else:
-            return f"{len(responses)}"
+            return str(len(keys))
 
 
-async def get(s3, bucket_name: str, key: str, find: str) -> str or None:
+async def get(s3, bucket_name: str, key: str, find: str) -> str | None:
     response = await s3.get_object(Bucket=bucket_name, Key=key)
     body = (await response["Body"].read()).decode("utf-8")
-    if find is not None:
+    if find:
         return None if body.find(find) == -1 else key
     return None
