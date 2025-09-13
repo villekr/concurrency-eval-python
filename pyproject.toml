@@ -22,6 +22,7 @@ select = [
 
 [dependency-groups]
 dev = [
+    "lizard>=1.17.31",
     "ruff>=0.13.0",
 ]
 
