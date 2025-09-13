@@ -18,7 +18,7 @@ def lambda_handler(event, context):
 
 
 async def processor(event):
-    session = get_session()  # This is comment
+    session = get_session()
     async with session.create_client("s3") as s3:
         bucket_name = event["s3_bucket_name"]
         folder = event["folder"]
