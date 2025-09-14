@@ -40,3 +40,7 @@ jobs:
           lizard -l python -C 10 -L 120 src/lambda_function.py
           # Output as CSV also
           lizard -l python -C 10 -L 120 src/lambda_function.py --csv
+
+      - name: Lizard csv output
+        run: |
+          lizard -l python -C 10 -L 120 src/lambda_function.py --csv
