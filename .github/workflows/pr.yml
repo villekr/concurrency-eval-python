@@ -37,5 +37,10 @@ jobs:
           # Check only the main file and fail on warnings
           # -C: cyclomatic complexity threshold (warn if function > 10)
           # -L: maximum function length (lines) threshold (warn if function > 120)
-          # --fail-on-warnings: non-zero exit if any warnings are found
           lizard -l python -C 10 -L 120 src/lambda_function.py
+          # Output as CSV also
+          lizard -l python -C 10 -L 120 src/lambda_function.py --csv
+
+      - name: Lizard csv output
+        run: |
+          lizard -l python -C 10 -L 120 src/lambda_function.py --csv
