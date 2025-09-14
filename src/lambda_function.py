@@ -46,7 +46,9 @@ async def processor(event):
             return str(len(keys))
 
 
-async def get(s3, bucket_name: str, key: str, find: Optional[Union[str, bytes]], sem: asyncio.Semaphore) -> Optional[str]:
+async def get(
+    s3, bucket_name: str, key: str, find: Optional[Union[str, bytes]], sem: asyncio.Semaphore
+) -> Optional[str]:
     async with sem:
         response = await s3.get_object(Bucket=bucket_name, Key=key)
         body_bytes = await response["Body"].read()  # fully read the body as required
