@@ -3,6 +3,7 @@ import time
 from typing import Optional, Union
 
 from aioboto3 import Session
+from botocore.config import Config
 
 _SESSION = Session()
 
@@ -21,7 +22,7 @@ def lambda_handler(event, context):
 
 
 async def processor(event):
-    async with _SESSION.client("s3") as s3:
+    async with _SESSION.client("s3", config=Config(max_pool_connections=50)) as s3:
         bucket_name = event["s3_bucket_name"]
         folder = event["folder"]
         find = event["find"]
