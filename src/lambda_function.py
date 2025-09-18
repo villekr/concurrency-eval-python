@@ -3,7 +3,6 @@ import time
 from typing import Optional, Union
 
 from aioboto3 import Session
-from botocore.config import Config
 
 _SESSION = Session()
 
