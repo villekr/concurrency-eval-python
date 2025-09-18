@@ -1,5 +1,4 @@
 import asyncio
-import os
 import time
 from typing import Optional, Union
 
@@ -7,7 +6,6 @@ from aioboto3 import Session
 from botocore.config import Config
 
 _SESSION = Session()
-_S3_CONFIG = Config(max_pool_connections=os.getenv("MAX_POOL_CONNECTIONS", 512))
 
 
 def lambda_handler(event, context):
@@ -24,7 +22,7 @@ def lambda_handler(event, context):
 
 
 async def processor(event):
-    async with _SESSION.client("s3", config=_S3_CONFIG) as s3:
+    async with _SESSION.client("s3") as s3:
         bucket_name = event["s3_bucket_name"]
         folder = event["folder"]
         find = event["find"]
