@@ -4,9 +4,9 @@ import boto3
 
 
 def lambda_handler(event, context):
-    start = time.time()
+    start = time.perf_counter()
     result = processor(event)
-    elapsed = round(time.time() - start, 1)
+    elapsed = round(time.perf_counter() - start, 1)
 
     return {
         "lang": "python",
@@ -22,18 +22,18 @@ def processor(event):
     folder = event["folder"]
     find = event["find"]
     response = s3.list_objects_v2(Bucket=bucket_name, Prefix=folder)
-    keys = [obj["Key"] for obj in response["Contents"]]
+    keys = [obj["Key"] for obj in response.get("Contents", [])]
     responses = [get(s3, bucket_name, key, find) for key in keys]
     if find:
-        first_non_none = next(value for value in responses if value is not None)
+        first_non_none = next((value for value in responses if value is not None), None)
         return first_non_none
     else:
-        return f"{len(responses)}"
+        return f"{len(keys)}"
 
 
-def get(s3, bucket_name: str, key: str, find: str) -> str or None:
+def get(s3, bucket_name: str, key: str, find: str) -> str | None:
     response = s3.get_object(Bucket=bucket_name, Key=key)
     body = response["Body"].read().decode("utf-8")
-    if find is not None:
+    if find:
         return key if (body.find(find) != -1) else None
     return None
