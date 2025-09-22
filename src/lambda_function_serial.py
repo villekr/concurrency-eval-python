@@ -21,7 +21,7 @@ def processor(event):
     bucket_name = event["s3_bucket_name"]
     folder = event["folder"]
     find = event["find"]
-    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=folder)
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=folder, MaxKeys=1000)
     keys = [obj["Key"] for obj in response.get("Contents", [])]
     responses = [get(s3, bucket_name, key, find) for key in keys]
     if find:

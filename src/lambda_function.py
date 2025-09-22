@@ -26,7 +26,7 @@ async def processor(event):
         bucket_name = event["s3_bucket_name"]
         folder = event["folder"]
         find = event["find"]
-        response = await s3.list_objects_v2(Bucket=bucket_name, Prefix=folder)
+        response = await s3.list_objects_v2(Bucket=bucket_name, Prefix=folder, MaxKeys=1000)
         keys = [obj["Key"] for obj in response.get("Contents", [])]
 
         tasks = [get(s3, bucket_name, key, find) for key in keys]
@@ -38,9 +38,10 @@ async def processor(event):
             return str(len(keys))
 
 
-async def get(s3, bucket_name: str, key: str, find: Optional[Union[str, bytes]]) -> Optional[str]:
+async def get(s3, bucket_name: str, key: str, find: Optional[str]) -> Optional[str]:
     response = await s3.get_object(Bucket=bucket_name, Key=key)
     body = await response["Body"].read()
     if find:
-        return None if body.decode("utf-8").find(find) == -1 else key
+        text = body.decode("utf-8")
+        return None if text.find(find) == -1 else key
     return None
