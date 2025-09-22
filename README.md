@@ -12,12 +12,12 @@ Mandatory requirements:
   - processor: List objects from a specified S3 bucket and process them concurrently/parallel
   - get: Get a single object's body from S3, try to find a string if specified
 - The processor-function must be encapsulated with timing functions
-- S3 bucket will contain at maximum 1000 objects
-  - Note: S3 ListObjectsV2 returns up to 1000 keys per request (MaxKeys default is 1000). Because of this upper bound, no pagination is needed or implemented in this project.
+- Listing object from S3 bucket needs to support at maximum 1000 objects
 - Each S3 objects' body must be fully read
 - Code must return at least the following attributes as lambda handler response:
   - time (float): duration as float in seconds rounded to one decimal place
-  - result (string): If find-string is specified, then the key of the first s3 object that contains that string (or None). Otherwise, the number of s3 objects listed
+  - result (string): If find-string is specified, then the key of the first s3 object that contains that string (or None). Otherwise, the number of s3 objects is listed
+- Code must be implemented using the recent language and AWS SDK versions available at the time of writing
 ```
 func handler(event):
     timer.start()
