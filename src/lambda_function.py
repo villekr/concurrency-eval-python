@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Optional, Union
+from typing import Optional
 
 from aioboto3 import Session
 from botocore.config import Config
