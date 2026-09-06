@@ -8,19 +8,9 @@ name: FT Image CI
 on:
   push:
     branches: [ main ]
-    paths:
-      - "src/lambda_function_ft.py"
-      - "requirements-ft.txt"
-      - "Dockerfile"
-      - ".github/workflows/merge-ft-image.yml"
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - "src/lambda_function_ft.py"
-      - "requirements-ft.txt"
-      - "Dockerfile"
-      - ".github/workflows/merge-ft-image.yml"
 
 jobs:
   build-and-push:
@@ -36,9 +26,12 @@ jobs:
       WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
       AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
     outputs:
-      # Immutable, reproducible reference the infra repo should pin its
-      # python_ft_image_uri to (instead of the mutable :latest tag).
-      image_uri: ${{ steps.refs.outputs.image_uri }}
+      # The immutable tag (commit SHA) the infra repo should pin its
+      # python_ft_image_uri to instead of the mutable :latest tag. Only the tag
+      # is exposed as an output: the full image URI contains ECR_REPOSITORY_URL
+      # (a Secret), and GitHub redacts/skips job outputs derived from secrets.
+      # The infra side already knows the repository URL (its own Terraform
+      # output) and composes "${ecr_repository_url}:${image_tag}".
       image_tag: ${{ steps.refs.outputs.image_tag }}
     steps:
       - name: Checkout
@@ -80,14 +73,11 @@ jobs:
         if: github.event_name == 'push'
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Compute image references
+      - name: Compute image tag
         id: refs
         if: github.event_name == 'push'
         shell: bash
-        run: |
-          set -euo pipefail
-          echo "image_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          echo "image_uri=${ECR_REPOSITORY_URL}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+        run: echo "image_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image to ECR
         if: github.event_name == 'push'
@@ -99,17 +89,17 @@ jobs:
           provenance: false
           tags: |
             ${{ env.ECR_REPOSITORY_URL }}:latest
-            ${{ steps.refs.outputs.image_uri }}
+            ${{ env.ECR_REPOSITORY_URL }}:${{ github.sha }}
 
       - name: Summary
         if: github.event_name == 'push'
         run: |
           {
-            echo "Pushed container image:"
-            echo "- ${ECR_REPOSITORY_URL}:latest"
-            echo "- ${{ steps.refs.outputs.image_uri }}"
+            echo "Pushed free-threaded image to ECR with tags: \`latest\` and \`${GITHUB_SHA}\`."
             echo ""
-            echo "Pin the infra \`python_ft_image_uri\` to the immutable tag:"
-            echo "- image_uri = \`${{ steps.refs.outputs.image_uri }}\`"
-            echo "- image_tag = \`${{ steps.refs.outputs.image_tag }}\`"
+            echo "For reproducible deploys, pin the infra \`python_ft_image_uri\` to the"
+            echo "immutable commit-SHA tag (the registry URL is the infra repo's own"
+            echo "\`ecr_repository_url\` output):"
+            echo "- image_tag = \`${GITHUB_SHA}\`"
+            echo "- image_uri = \`<ecr_repository_url>:${GITHUB_SHA}\`"
           } >> "$GITHUB_STEP_SUMMARY"
