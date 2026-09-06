@@ -43,7 +43,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Export dependencies to requirements.txt from uv.lock
-        run: uv export --frozen --no-dev -o requirements.txt
+        run: uv export --frozen --no-dev --extra async -o requirements.txt
 
       - name: Prepare Lambda layer (Python dependencies)
         run: |
