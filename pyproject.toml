@@ -5,9 +5,28 @@ description = "Python code for [How Do You Like Your Lambda Concurrency](https:/
 authors = ["Ville Kärkkäinen <ville.karkkainen@outlook.com>"]
 readme = "README.md"
 requires-python = ">=3.14"
+# boto3 is shared by every implementation (serial, aioboto3 and tonio).
 dependencies = [
-    "aioboto3>=15.5.0",
     "boto3>=1.40.61",
+]
+
+# Alternative, mutually exclusive runtime stacks. Each implementation pulls in
+# only what it needs:
+#   - "async": aioboto3 asyncio implementation (lambda_function.py), zip-based.
+#   - "ft":    free-threaded TonIO implementation (lambda_function_ft.py),
+#              container-image based. tonio ships wheels only for free-threaded
+#              CPython (cp314t/cp315t) and is Unix-only, so it is installed only
+#              inside the container image (see Dockerfile / requirements-ft.txt)
+#              and never in the standard GIL environment used for ruff/lizard.
+# When TonIO is used, aioboto3 is unnecessary (TonIO is not asyncio-compatible),
+# which is why these are kept apart.
+[project.optional-dependencies]
+async = [
+    "aioboto3>=15.5.0",
+]
+ft = [
+    "tonio>=0.9.15 ; platform_system != 'Windows'",
+    "awslambdaric>=4.0.2 ; platform_system != 'Windows'",
 ]
 
 [tool.ruff]

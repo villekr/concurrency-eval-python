@@ -1,0 +1,11 @@
+# Dependencies for the free-threaded (TonIO) container-image Lambda.
+#
+# These are kept separate from pyproject.toml / uv.lock because tonio only
+# ships wheels for free-threaded CPython (cp314t/cp315t) and is Unix-only,
+# so it cannot be resolved in the standard (GIL) environment used for
+# ruff/lizard checks and the other zip-based Lambda artifacts.
+tonio==0.9.15
+boto3==1.43.89
+# AWS Lambda Runtime Interface Client - lets a custom base image speak the
+# Lambda Runtime API.
+awslambdaric==4.0.2

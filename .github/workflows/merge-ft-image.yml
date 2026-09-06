@@ -1,0 +1,115 @@
+name: FT Image CI
+
+# Builds the free-threaded (TonIO) container-image Lambda for arm64.
+# - On pull requests: build only, to verify the Dockerfile still works.
+# - On push to main:  build and push to ECR (provisioned by the
+#   concurrency-eval-infra-aws `artifact-infra` stack).
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "src/lambda_function_ft.py"
+      - "requirements-ft.txt"
+      - "Dockerfile"
+      - ".github/workflows/merge-ft-image.yml"
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "src/lambda_function_ft.py"
+      - "requirements-ft.txt"
+      - "Dockerfile"
+      - ".github/workflows/merge-ft-image.yml"
+
+jobs:
+  build-and-push:
+    name: Build free-threaded image and push to ECR
+    runs-on: ubuntu-24.04-arm # native arm64 build for the Graviton Lambda image
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      # Set as Repository/Environment Variables or Secrets. ECR_REPOSITORY_URL,
+      # WRITER_ROLE_ARN and AWS_REGION come from the artifact-infra stack outputs.
+      ECR_REPOSITORY_URL: ${{ vars.ECR_REPOSITORY_URL || secrets.ECR_REPOSITORY_URL }}
+      WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
+    outputs:
+      # Immutable, reproducible reference the infra repo should pin its
+      # python_ft_image_uri to (instead of the mutable :latest tag).
+      image_uri: ${{ steps.refs.outputs.image_uri }}
+      image_tag: ${{ steps.refs.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ----- PR: build only (no credentials, no push) -----
+      - name: Build image (PR validation, no push)
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          load: true
+          tags: concurrency-eval-python-ft:pr-${{ github.sha }}
+
+      # ----- push to main: authenticate, build, and push to ECR -----
+      - name: Validate required configuration
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ECR_REPOSITORY_URL?Define ECR_REPOSITORY_URL as a Repository/Environment variable or Secret}"
+          : "${WRITER_ROLE_ARN?Define WRITER_ROLE_ARN as a Repository/Environment variable or Secret}"
+          : "${AWS_REGION?Define AWS_REGION as a Repository/Environment variable or Secret}"
+
+      - name: Configure AWS credentials (OIDC)
+        if: github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.WRITER_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-ft-image-push
+
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Compute image references
+        id: refs
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "image_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "image_uri=${ECR_REPOSITORY_URL}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image to ECR
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.ECR_REPOSITORY_URL }}:latest
+            ${{ steps.refs.outputs.image_uri }}
+
+      - name: Summary
+        if: github.event_name == 'push'
+        run: |
+          {
+            echo "Pushed container image:"
+            echo "- ${ECR_REPOSITORY_URL}:latest"
+            echo "- ${{ steps.refs.outputs.image_uri }}"
+            echo ""
+            echo "Pin the infra \`python_ft_image_uri\` to the immutable tag:"
+            echo "- image_uri = \`${{ steps.refs.outputs.image_uri }}\`"
+            echo "- image_tag = \`${{ steps.refs.outputs.image_tag }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
