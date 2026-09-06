@@ -35,6 +35,11 @@ jobs:
       ECR_REPOSITORY_URL: ${{ vars.ECR_REPOSITORY_URL || secrets.ECR_REPOSITORY_URL }}
       WRITER_ROLE_ARN: ${{ vars.WRITER_ROLE_ARN || secrets.WRITER_ROLE_ARN }}
       AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
+    outputs:
+      # Immutable, reproducible reference the infra repo should pin its
+      # python_ft_image_uri to (instead of the mutable :latest tag).
+      image_uri: ${{ steps.refs.outputs.image_uri }}
+      image_tag: ${{ steps.refs.outputs.image_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -75,6 +80,15 @@ jobs:
         if: github.event_name == 'push'
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Compute image references
+        id: refs
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "image_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "image_uri=${ECR_REPOSITORY_URL}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push image to ECR
         if: github.event_name == 'push'
         uses: docker/build-push-action@v6
@@ -85,7 +99,7 @@ jobs:
           provenance: false
           tags: |
             ${{ env.ECR_REPOSITORY_URL }}:latest
-            ${{ env.ECR_REPOSITORY_URL }}:${{ github.sha }}
+            ${{ steps.refs.outputs.image_uri }}
 
       - name: Summary
         if: github.event_name == 'push'
@@ -93,5 +107,9 @@ jobs:
           {
             echo "Pushed container image:"
             echo "- ${ECR_REPOSITORY_URL}:latest"
-            echo "- ${ECR_REPOSITORY_URL}:${GITHUB_SHA}"
+            echo "- ${{ steps.refs.outputs.image_uri }}"
+            echo ""
+            echo "Pin the infra \`python_ft_image_uri\` to the immutable tag:"
+            echo "- image_uri = \`${{ steps.refs.outputs.image_uri }}\`"
+            echo "- image_tag = \`${{ steps.refs.outputs.image_tag }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
