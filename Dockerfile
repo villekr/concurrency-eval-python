@@ -49,6 +49,19 @@ FROM debian:bookworm-slim
 
 ARG FUNCTION_DIR
 
+# Apply the latest security updates, then remove perl entirely. The Python
+# free-threaded Lambda runtime never invokes perl, and Debian bookworm has no
+# patched perl-base for CVE-2026-13221 (perl trie regex miscompilation) - only
+# sid/unstable is fixed, which is unsuitable for a stable runtime. `perl-base`
+# is Debian-Essential but nothing in this image depends on it (verified: apt
+# reports perl-base as the only package removed), so we force-remove it to
+# eliminate the vulnerable /usr/bin/perl rather than swap to an unstable base.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && dpkg --purge --force-remove-essential perl-base \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Bring the free-threaded interpreter and installed dependencies over.
 COPY --from=build /opt/python /opt/python
 COPY --from=build ${FUNCTION_DIR} ${FUNCTION_DIR}
