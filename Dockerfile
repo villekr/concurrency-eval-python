@@ -46,6 +46,22 @@ RUN mkdir -p ${FUNCTION_DIR} && \
 # Copy in the function source.
 COPY src/lambda_function_ft.py ${FUNCTION_DIR}/
 
+# Strip build-time installer tooling (pip, setuptools, wheel) from the
+# interpreter now that dependencies are installed. These tools are only needed
+# during the build; the Lambda runtime invokes awslambdaric and never uses
+# them. Removing them here keeps the runtime image minimal and free of their
+# SBOM-driven CVEs (e.g. pip CVE-2026-13346). Done in the build stage so the
+# runtime stage copies only the minimal interpreter.
+RUN set -e; \
+    for sp in /opt/python/*/lib/python3.14t/site-packages; do \
+        rm -rf "$sp"/pip "$sp"/pip-* \
+               "$sp"/setuptools "$sp"/setuptools-* "$sp"/pkg_resources \
+               "$sp"/wheel "$sp"/wheel-*; \
+    done; \
+    for b in /opt/python/*/bin; do \
+        rm -f "$b"/pip "$b"/pip3 "$b"/pip3.* "$b"/wheel; \
+    done
+
 # ---- runtime stage --------------------------------------------------------
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023
 
@@ -56,7 +72,8 @@ RUN dnf upgrade -y --setopt=install_weak_deps=False \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
-# Bring the free-threaded interpreter and installed dependencies over.
+# Bring only the minimal free-threaded interpreter and installed dependencies
+# over from the build stage (build-time tooling was already stripped there).
 COPY --from=build /opt/python /opt/python
 COPY --from=build ${FUNCTION_DIR} ${FUNCTION_DIR}
 
